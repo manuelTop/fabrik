@@ -3390,13 +3390,128 @@ class PlgFabrik_Element extends FabrikPlugin
 		$def0 = array_key_exists('value', $default) ? $default['value'][0] : $default[0];
 		$def1 = array_key_exists('value', $default) ? $default['value'][1] : $default[1];
 
+		
 		if ($type === 'list')
-		{
-			$return[] = '<span class="fabrikFilterRangeLabel">' . FText::_('COM_FABRIK_BETWEEN') . '</span>';
-			$return[] = JHTML::_('select.genericlist', $rows, $v . '[0]', $attributes, 'value', 'text', $def0, $element->name . '_filter_range_0');
-			$return[] = '<br />';
-			$return[] = '<span class="fabrikFilterRangeLabel">' . FText::_('COM_FABRIK_AND') . '</span>';
-			$return[] = JHTML::_('select.genericlist', $rows, $v . '[1]', $attributes, 'value', 'text', $def1, $element->name . '_filter_range_1');
+			{
+			
+$dropdown_slider =  $this->getParams()->get('filter_range_slider_yesno' );
+if ($dropdown_slider == '0') { 
+							$return[] = '<span class="fabrikFilterRangeLabel">' . FText::_('COM_FABRIK_BETWEEN') . '</span>';
+							$return[] = JHTML::_('select.genericlist', $rows, $v . '[0]', $attributes, 'value', 'text', $def0, $element->name . '_filter_range_0');
+							$return[] = '<br />';
+							$return[] = '<span class="fabrikFilterRangeLabel">' . FText::_('COM_FABRIK_AND') . '</span>';
+							$return[] = JHTML::_('select.genericlist', $rows, $v . '[1]', $attributes, 'value', 'text', $def1, $element->name . '_filter_range_1');
+								
+							 }
+
+if ($dropdown_slider == '1') { 
+
+$result = array();
+asort($rows);
+foreach ($rows as $key => $value) {  $result[] = $value -> value;}
+
+/**
+	 * add the min and max of the slider 
+
+*/ 
+
+$min1 = ($result[0]);
+$max1 = max($result);
+
+/**
+	 * Set the value of the slider to min and max if no value present 
+*/
+if($def0 == ''){$def0 = $min1;}
+if($def1 == ''){$def1 = $max1;}
+
+/**
+	 * to set the steps should find a way to add it in the backend admin
+	 */
+
+
+/**
+	 * resolves a compatability issue with mootols
+	 
+	 still getting in ff debuger
+	 Use of getAttributeNode() is deprecated. Use getAttribute() instead. mootools-core.js:108:287
+     Password fields present in a form with an insecure (http://) form action. This is a security risk that allows user login credentials to be stolen.[Learn More] <unknown>
+     require js define jquery as  function m() list:911:3
+*/
+
+
+$compatability_mootools = "jQuery.ui.slider.prototype.widgetEventPrefix = 'slider';";			
+
+/** change the php array to js usable array
+*/
+
+
+		
+$return[] = '<div style="width:100%;">';
+$return[] = '<div class="min_slider" style="float:left;">';
+$return[] = '<input class="' . $class . '" data-filter-name="' . $this->getFullName(true, false) . '" style="vertical-align: middle; border: none;  line-height:normal; text-align:center; width:50px; margin-right:10px;" value="' . $def0 . '" name="' . $v . '[0]"  id="' . $element->name . '_filter_range_0" />';
+$return[] = '</div>';
+$return[] = '<div class="ui-slider ui-slider-horizontal ui-widget ui-widget-content ui-corner-all" id="'. $element->name . '" style="float: left; width: calc(100% - 126px); margin-top:3px;"></div>';		 
+$return[] = '<div class="max_slider" style="float:left;">';
+$return[] = '<input class="' . $class . '" data-filter-name="' . $this->getFullName(true, false) . '" style="vertical-align: middle; border: none;  line-height:normal; text-align:center; width:50px; margin-left:10px;" value="' . $def1 .'" name="' . $v . '[1]" id="' . $element->name . '_filter_range_1"  />';
+$return[] = '</div>';
+$return[] = '</div>';
+
+if ($element->plugin == 'field'  ) {
+$Range_steps =  $this->getParams()->get('filter_range_slider_steps' );	 
+if ($Range_steps == '') {$Range_stepsj = '';}
+else {$Range_stepsj = "step: $Range_steps ,";}	
+	
+	$return[] = '<script>
+
+jQuery(function() {
+'.$compatability_mootools.'
+		
+			jQuery( "#'. $element->name . '" ).slider({
+               range:true,
+               min: '.$min1.',
+               max: '.$max1.',
+			  '.$Range_stepsj.'
+               values: [ '.$def0.', '.$def1.' ],
+               slide: function( event, ui ) {
+                  jQuery( "#' . $element->name . '_filter_range_0").val( ui.values[ 0 ]  );
+				  jQuery( "#' . $element->name . '_filter_range_1").val( ui.values[ 1 ]  );
+               } 
+
+		   });
+		    jQuery( "#' . $element->name . '_filter_range_0" ).val(  jQuery( "#'. $element->name . '" ).slider( "values", 0 ) );
+            jQuery( "#' . $element->name . '_filter_range_1" ).val(  jQuery( "#'. $element->name . '" ).slider( "values", 1 ) );
+	  		});	
+			
+			
+</script>';
+}
+
+else {
+	$resultj = JSON_encode($result);
+	$return[] = '<script>
+
+jQuery(function() {
+'.$compatability_mootools.'
+js_arr_'. $element->name . ' =  '.$resultj.';			
+			jQuery( "#'. $element->name . '" ).slider({
+               range:true,
+               min: 0,
+               max: js_arr_'. $element->name . '.length - 2,
+			
+              values: [jQuery.inArray("'.$def0.'", js_arr_'. $element->name . '), jQuery.inArray("'.$def1.'", js_arr_'. $element->name . ')],
+               slide: function( event, ui ) {
+                  jQuery( "#' . $element->name . '_filter_range_0").val(js_arr_'. $element->name . '[ui.values[0]]);
+				  jQuery( "#' . $element->name . '_filter_range_1").val(js_arr_'. $element->name . '[ui.values[1]]);
+               } 
+		   });
+		    jQuery("#'. $element->name .'_filter_range_0" ).val(js_arr_'. $element->name . '[jQuery("#'. $element->name . '" ).slider( "values", 0 )]);
+            jQuery("#'. $element->name .'_filter_range_1" ).val(js_arr_'. $element->name . '[jQuery("#'. $element->name . '" ).slider( "values", 1 )]);
+	  		});	
+			
+			
+</script>';
+}
+			}
 		}
 		else
 		{
